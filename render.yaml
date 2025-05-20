@@ -1,0 +1,10 @@
+# render.yaml
+services:
+  - type: web_service
+    name: multiuser-app      
+    env: node                
+    plan: free               
+    buildCommand: npm install
+    startCommand: npm start
+    port: 3000
+    autoDeploy: true 

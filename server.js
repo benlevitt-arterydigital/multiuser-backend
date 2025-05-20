@@ -6,24 +6,17 @@ const { Server } = require("socket.io");
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: {
-    origin: "*", // or specify an array of allowed origins
-    methods: ["GET", "POST"],
-  },
-});
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
 // In-memory store for players
 let players = {};
 
 io.on("connection", (socket) => {
-  console.log(`User connected: ${socket.id}`);
+  console.log("✨ New Socket.IO connection:", socket.id);
 
   socket.on("newPlayer", (data) => {
+    console.log("➕ newPlayer:", socket.id, data);
     players[socket.id] = {
       nickname: data.nickname,
       color: data.color,
@@ -32,15 +25,25 @@ io.on("connection", (socket) => {
     io.emit("playersUpdate", players);
   });
 
-  socket.on("move", (position) => {
+  socket.on("move", (data) => {
     if (players[socket.id]) {
-      players[socket.id].position = position;
+      players[socket.id].position = data.position;
+      players[socket.id].moving = data.moving;
       io.emit("playersUpdate", players);
     }
   });
 
+  socket.on("signal", ({ to, from, data }) => {
+    console.log("↔️  signal relay from", from, "to", to, data);
+    io.to(to).emit("signal", { from, data });
+  });
+
   socket.on("disconnect", () => {
+    console.log("❌ disconnect:", socket.id);
     delete players[socket.id];
     io.emit("playersUpdate", players);
   });
 });
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
